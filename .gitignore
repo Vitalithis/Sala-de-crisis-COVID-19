@@ -1,0 +1,24 @@
+# Datos crudos: se descargan con el codigo (R1). Nunca se suben.
+data/raw/
+*.csv.gz
+
+# Entorno
+.venv/
+venv/
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Reportes pesados generados
+reports/profiling/*.html
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Archivos temporales de Office
+~$*
