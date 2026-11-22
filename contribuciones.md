@@ -4,17 +4,17 @@
 
 | Integrante | Rol | Componentes principales | Revisó el trabajo de |
 |---|---|---|---|
-| | A · Ingeniería de datos | R1, R3 | C |
-| | B · Calidad, ética y fuente externa | R2, R6, P3, P4, P7 | D |
-| | C · Modelos | R5, P5, P6 | A |
-| | D · Tablero y comunicación | R7, R8, P1, P2, informes | B |
+| Nicolás | A · Ingeniería de datos | R1, R3 | Cristian (C) |
+| Dan | B · Calidad, ética y fuente externa | R2, R6, P3, P4, P7 | Leo (D) |
+| Cristian | C · Modelos | R5, P5, P6 | Nicolás (A) |
+| Leo | D · Tablero y comunicación | R7, R8, P1, P2, informes | Dan (B) |
 
 Detalle (completar al cierre con los archivos y los PR de cada persona):
 
-- **A:**
-- **B:**
-- **C:**
-- **D:**
+- **Nicolás (A):**
+- **Dan (B):**
+- **Cristian (C):**
+- **Leo (D):**
 
 ## Uso de herramientas de IA generativa
 
