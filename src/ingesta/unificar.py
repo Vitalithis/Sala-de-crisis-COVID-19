@@ -35,8 +35,10 @@ COLUMNAS = [
     "case_fatality_ratio", "clave_territorio", "archivo_origen", "fila_origen",
 ]
 
-# Nombres de pais inconsistentes entre esquemas. Lista INICIAL: completar y
-# documentar cada decision en docs/decisiones_calidad.md (R2).
+# Nombres de pais inconsistentes entre esquemas -> nombre canonico de la tabla
+# UID (UID_ISO_FIPS_LookUp_Table.csv). Decision documentada en
+# docs/decisiones_calidad.md (problema 7). Casi todas las variantes aparecen
+# solo entre ene y mar de 2020 (esquemas 1 y 2).
 NORMALIZAR_PAIS = {
     "Mainland China": "China",
     "South Korea": "Korea, South",
@@ -46,7 +48,57 @@ NORMALIZAR_PAIS = {
     "Viet Nam": "Vietnam",
     "Russian Federation": "Russia",
     "Czech Republic": "Czechia",
+    "Taiwan": "Taiwan*",
+    "Taipei and environs": "Taiwan*",
+    "Bahamas, The": "Bahamas",
+    "The Bahamas": "Bahamas",
+    "Gambia, The": "Gambia",
+    "The Gambia": "Gambia",
+    "Cape Verde": "Cabo Verde",
+    "East Timor": "Timor-Leste",
+    "Ivory Coast": "Cote d'Ivoire",
+    "Republic of Ireland": "Ireland",
+    "Republic of Moldova": "Moldova",
+    "Republic of the Congo": "Congo (Brazzaville)",
+    "Vatican City": "Holy See",
+    "Palestine": "West Bank and Gaza",
+    "occupied Palestinian territory": "West Bank and Gaza",
+    # Crucero informado como pais generico al inicio
+    "Cruise Ship": "Diamond Princess",
+    "Others": "Diamond Princess",
 }
+
+# Territorios que al inicio se informaron como pais y despues JHU los ubica
+# como provincia de otro pais: pais_original -> (pais, provincia).
+PAIS_A_PROVINCIA = {
+    "Hong Kong": ("China", "Hong Kong"),
+    "Hong Kong SAR": ("China", "Hong Kong"),
+    "Macau": ("China", "Macau"),
+    "Macao SAR": ("China", "Macau"),
+    "Aruba": ("Netherlands", "Aruba"),
+    "Curacao": ("Netherlands", "Curacao"),
+    "Faroe Islands": ("Denmark", "Faroe Islands"),
+    "Greenland": ("Denmark", "Greenland"),
+    "French Guiana": ("France", "French Guiana"),
+    "Guadeloupe": ("France", "Guadeloupe"),
+    "Martinique": ("France", "Martinique"),
+    "Mayotte": ("France", "Mayotte"),
+    "Reunion": ("France", "Reunion"),
+    "Saint Barthelemy": ("France", "Saint Barthelemy"),
+    "Saint Martin": ("France", "St Martin"),
+    "St. Martin": ("France", "St Martin"),
+    "Cayman Islands": ("United Kingdom", "Cayman Islands"),
+    "Channel Islands": ("United Kingdom", "Channel Islands"),
+    "Gibraltar": ("United Kingdom", "Gibraltar"),
+    "Guernsey": ("United Kingdom", "Guernsey"),
+    "Jersey": ("United Kingdom", "Jersey"),
+    "North Ireland": ("United Kingdom", "Northern Ireland"),
+    "Guam": ("US", "Guam"),
+    "Puerto Rico": ("US", "Puerto Rico"),
+}
+
+# Archivo con las filas excluidas por duplicado (linaje de la decision)
+DUPLICADOS_EXCLUIDOS = config.REPORTS / "duplicados_excluidos.csv"
 
 LIMITES_ESQUEMA = [  # (ultima fecha del esquema, numero de esquema)
     ("2020-02-29", 1),
@@ -88,7 +140,7 @@ def _tipar(df: pd.DataFrame) -> pd.DataFrame:
     ).dt.strftime("%Y-%m-%d")  # formato ISO AAAA-MM-DD
     for c in ("country_region", "province_state", "admin2", "combined_key"):
         df[c] = df[c].str.strip()
-    df["country_region"] = df["country_region"].replace(NORMALIZAR_PAIS)
+    df = normalizar_territorio(df)
     df["clave_territorio"] = (
         df["country_region"].fillna("")
         + "|" + df["province_state"].fillna("")
@@ -98,12 +150,44 @@ def _tipar(df: pd.DataFrame) -> pd.DataFrame:
     return df[COLUMNAS]
 
 
+def normalizar_territorio(df: pd.DataFrame) -> pd.DataFrame:
+    """Lleva country_region/province_state a los nombres canonicos de la tabla UID."""
+    df["country_region"] = df["country_region"].replace(NORMALIZAR_PAIS)
+    for original, (pais, provincia) in PAIS_A_PROVINCIA.items():
+        m = df["country_region"] == original
+        df.loc[m, "province_state"] = provincia
+        df.loc[m, "country_region"] = pais
+    # «Others / Diamond Princess cruise ship» queda como el pais Diamond Princess
+    m = df["country_region"] == "Diamond Princess"
+    df.loc[m, "province_state"] = pd.NA
+    return df
+
+
+def separar_duplicados(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Unicidad (R2): una fila por (fecha_reporte, clave_territorio).
+
+    JHU publico algunos territorios dos veces en el mismo archivo (por ejemplo,
+    Gansu y Hebei el 11 y 12-mar-2020: una fila con datos y otra en cero). Se
+    conserva la fila con mayor confirmed (y luego deaths) y se EXCLUYEN las
+    demas; no se suman ni se imputan. Devuelve (sin_duplicados, excluidas).
+    """
+    orden = df.sort_values(["confirmed", "deaths"], ascending=False, na_position="last")
+    dup = orden.duplicated(["fecha_reporte", "clave_territorio"], keep="first")
+    excluidas = orden[dup]
+    limpio = df.drop(index=excluidas.index).reset_index(drop=True)
+    return limpio, excluidas.sort_values(["fecha_reporte", "clave_territorio"])
+
+
 def unificar(carpeta: Path = config.RAW_DIARIOS) -> pd.DataFrame:
     archivos = sorted(carpeta.glob("*.csv"), key=lambda p: pd.to_datetime(p.stem, format="%m-%d-%Y"))
     if not archivos:
         raise FileNotFoundError(f"No hay reportes en {carpeta}. Ejecute primero la descarga.")
     df = pd.concat((leer_reporte(a) for a in archivos), ignore_index=True)
-    return _tipar(df)
+    df, excluidas = separar_duplicados(_tipar(df))
+    DUPLICADOS_EXCLUIDOS.parent.mkdir(parents=True, exist_ok=True)
+    excluidas.to_csv(DUPLICADOS_EXCLUIDOS, index=False)
+    print(f"Duplicados excluidos: {len(excluidas)} filas -> {DUPLICADOS_EXCLUIDOS}")
+    return df
 
 
 def guardar_parquet(df: pd.DataFrame, ruta: Path = config.PARQUET_UNIFICADO) -> Path:

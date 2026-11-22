@@ -1,0 +1,80 @@
+fecha_reporte,esquema,fips,admin2,province_state,country_region,last_update,lat,long,confirmed,deaths,recovered,active,combined_key,incident_rate,case_fatality_ratio,clave_territorio,archivo_origen,fila_origen
+2020-01-23,1,,,Hubei,China,2020-01-23,,,444,17,28,,,,,China|Hubei|,01-23-2020.csv,15
+2020-02-26,1,,,,New Zealand,2020-02-27,,,0,0,0,,,,,New Zealand||,02-26-2020.csv,87
+2020-02-28,1,,,Northern Ireland,United Kingdom,2020-02-28,,,0,0,0,,,,,United Kingdom|Northern Ireland|,02-28-2020.csv,145
+2020-03-08,2,,,,Ireland,2020-03-08,53.4167,-8.0,19,0,0,,,,,Ireland||,03-08-2020.csv,79
+2020-03-11,2,,,Gansu,China,2020-03-11,36.0611,103.8343,0,0,0,,,,,China|Gansu|,03-11-2020.csv,207
+2020-03-11,2,,,Hebei,China,2020-03-11,38.0428,114.5149,0,0,0,,,,,China|Hebei|,03-11-2020.csv,208
+2020-03-12,2,,,Gansu,China,2020-03-11,36.0611,103.8343,0,0,0,,,,,China|Gansu|,03-12-2020.csv,212
+2020-03-12,2,,,Hebei,China,2020-03-11,38.0428,114.5149,0,0,0,,,,,China|Hebei|,03-12-2020.csv,213
+2020-03-14,2,,,Guernsey,United Kingdom,2020-03-14,49.448196,-2.58949,0,0,0,,,,,United Kingdom|Guernsey|,03-14-2020.csv,276
+2020-03-14,2,,,Jersey,United Kingdom,2020-03-14,49.2138,-2.1358,0,0,0,,,,,United Kingdom|Jersey|,03-14-2020.csv,275
+2020-03-15,2,,,Guernsey,United Kingdom,2020-03-15,49.448196,-2.58949,0,0,0,,,,,United Kingdom|Guernsey|,03-15-2020.csv,285
+2020-03-15,2,,,Jersey,United Kingdom,2020-03-15,49.2138,-2.1358,0,0,0,,,,,United Kingdom|Jersey|,03-15-2020.csv,284
+2020-03-16,2,,,,Congo (Brazzaville),2020-03-16,-1.44,15.556,1,0,0,,,,,Congo (Brazzaville)||,03-16-2020.csv,257
+2020-03-16,2,,,French Guiana,France,2020-03-16,4.0,-53.0,5,0,0,,,,,France|French Guiana|,03-16-2020.csv,203
+2020-03-16,2,,,Guadeloupe,France,2020-03-16,16.25,-61.5833,3,0,0,,,,,France|Guadeloupe|,03-16-2020.csv,213
+2020-03-16,2,,,Mayotte,France,2020-03-16,-12.8275,45.1662,1,0,0,,,,,France|Mayotte|,03-16-2020.csv,253
+2020-03-16,2,,,Guam,US,2020-03-15,13.4443,144.7937,3,0,0,,,,,US|Guam|,03-16-2020.csv,219
+2020-03-16,2,,,Puerto Rico,US,2020-03-16,18.2,-66.5,3,0,0,,,,,US|Puerto Rico|,03-16-2020.csv,217
+2020-03-16,2,,,Guernsey,United Kingdom,2020-03-16,49.448196,-2.58949,0,0,0,,,,,United Kingdom|Guernsey|,03-16-2020.csv,299
+2020-03-16,2,,,Jersey,United Kingdom,2020-03-16,49.2138,-2.1358,0,0,0,,,,,United Kingdom|Jersey|,03-16-2020.csv,298
+2020-03-17,2,,,,Congo (Brazzaville),2020-03-17,-1.44,15.556,0,0,0,,,,,Congo (Brazzaville)||,03-17-2020.csv,275
+2020-03-17,2,,,French Guiana,France,2020-03-17,4.0,-53.0,7,0,0,,,,,France|French Guiana|,03-17-2020.csv,205
+2020-03-17,2,,,Guadeloupe,France,2020-03-17,16.25,-61.5833,6,0,0,,,,,France|Guadeloupe|,03-17-2020.csv,211
+2020-03-17,2,,,Mayotte,France,2020-03-16,-12.8275,45.1662,1,0,0,,,,,France|Mayotte|,03-17-2020.csv,259
+2020-03-17,2,,,Reunion,France,2020-03-17,-21.1151,55.5364,9,0,0,,,,,France|Reunion|,03-17-2020.csv,195
+2020-03-17,2,,,Guam,US,2020-03-15,13.4443,144.7937,3,0,0,,,,,US|Guam|,03-17-2020.csv,231
+2020-03-17,2,,,Puerto Rico,US,2020-03-17,18.2,-66.5,0,0,0,,,,,US|Puerto Rico|,03-17-2020.csv,274
+2020-03-17,2,,,Guernsey,United Kingdom,2020-03-17,49.448196,-2.58949,0,0,0,,,,,United Kingdom|Guernsey|,03-17-2020.csv,303
+2020-03-17,2,,,Jersey,United Kingdom,2020-03-17,49.2138,-2.1358,0,0,0,,,,,United Kingdom|Jersey|,03-17-2020.csv,302
+2020-03-18,2,,,,Congo (Brazzaville),2020-03-17,-1.44,15.556,0,0,0,,,,,Congo (Brazzaville)||,03-18-2020.csv,283
+2020-03-18,2,,,French Guiana,France,2020-03-18,4.0,-53.0,0,0,0,,,,,France|French Guiana|,03-18-2020.csv,275
+2020-03-18,2,,,Guadeloupe,France,2020-03-18,16.25,-61.5833,0,0,0,,,,,France|Guadeloupe|,03-18-2020.csv,276
+2020-03-18,2,,,Mayotte,France,2020-03-18,-12.8431,45.1383,0,0,0,,,,,France|Mayotte|,03-18-2020.csv,277
+2020-03-18,2,,,Reunion,France,2020-03-18,-21.1351,55.2471,0,0,0,,,,,France|Reunion|,03-18-2020.csv,278
+2020-03-18,2,,,,Gambia,2020-03-18,13.4667,-16.6,0,0,0,,,,,Gambia||,03-18-2020.csv,284
+2020-03-18,2,,,Aruba,Netherlands,2020-03-18,12.5186,-70.0358,2,0,0,,,,,Netherlands|Aruba|,03-18-2020.csv,242
+2020-03-18,2,,,Guam,US,2020-03-18,13.4443,144.7937,0,0,0,,,,,US|Guam|,03-18-2020.csv,279
+2020-03-18,2,,,Puerto Rico,US,2020-03-17,18.2,-66.5,0,0,0,,,,,US|Puerto Rico|,03-18-2020.csv,282
+2020-03-18,2,,,Guernsey,United Kingdom,2020-03-18,49.448196,-2.58949,0,0,0,,,,,United Kingdom|Guernsey|,03-18-2020.csv,311
+2020-03-18,2,,,Jersey,United Kingdom,2020-03-18,49.2138,-2.1358,0,0,0,,,,,United Kingdom|Jersey|,03-18-2020.csv,310
+2020-03-19,2,,,,Bahamas,2020-03-19,24.25,-76.0,0,0,0,,,,,Bahamas||,03-19-2020.csv,291
+2020-03-19,2,,,,Congo (Brazzaville),2020-03-17,-1.44,15.556,0,0,0,,,,,Congo (Brazzaville)||,03-19-2020.csv,290
+2020-03-19,2,,,Greenland,Denmark,2020-03-19,72.0,-40.0,0,0,0,,,,,Denmark|Greenland|,03-19-2020.csv,285
+2020-03-19,2,,,French Guiana,France,2020-03-18,4.0,-53.0,0,0,0,,,,,France|French Guiana|,03-19-2020.csv,281
+2020-03-19,2,,,Guadeloupe,France,2020-03-18,16.25,-61.5833,0,0,0,,,,,France|Guadeloupe|,03-19-2020.csv,282
+2020-03-19,2,,,Mayotte,France,2020-03-18,-12.8431,45.1383,0,0,0,,,,,France|Mayotte|,03-19-2020.csv,283
+2020-03-19,2,,,Reunion,France,2020-03-18,-21.1351,55.2471,0,0,0,,,,,France|Reunion|,03-19-2020.csv,284
+2020-03-19,2,,,,Gambia,2020-03-18,13.4667,-16.6,0,0,0,,,,,Gambia||,03-19-2020.csv,292
+2020-03-19,2,,,Aruba,Netherlands,2020-03-18,12.5186,-70.0358,2,0,0,,,,,Netherlands|Aruba|,03-19-2020.csv,251
+2020-03-19,2,,,Guam,US,2020-03-18,13.4443,144.7937,0,0,0,,,,,US|Guam|,03-19-2020.csv,286
+2020-03-19,2,,,Puerto Rico,US,2020-03-17,18.2,-66.5,0,0,0,,,,,US|Puerto Rico|,03-19-2020.csv,289
+2020-03-19,2,,,Guernsey,United Kingdom,2020-03-19,49.448196,-2.58949,0,0,0,,,,,United Kingdom|Guernsey|,03-19-2020.csv,319
+2020-03-19,2,,,Jersey,United Kingdom,2020-03-19,49.2138,-2.1358,0,0,0,,,,,United Kingdom|Jersey|,03-19-2020.csv,318
+2020-03-20,2,,,,Bahamas,2020-03-19,24.25,-76.0,0,0,0,,,,,Bahamas||,03-20-2020.csv,298
+2020-03-20,2,,,,Congo (Brazzaville),2020-03-17,-1.44,15.556,0,0,0,,,,,Congo (Brazzaville)||,03-20-2020.csv,297
+2020-03-20,2,,,Greenland,Denmark,2020-03-19,72.0,-40.0,0,0,0,,,,,Denmark|Greenland|,03-20-2020.csv,292
+2020-03-20,2,,,French Guiana,France,2020-03-18,4.0,-53.0,0,0,0,,,,,France|French Guiana|,03-20-2020.csv,288
+2020-03-20,2,,,Guadeloupe,France,2020-03-18,16.25,-61.5833,0,0,0,,,,,France|Guadeloupe|,03-20-2020.csv,289
+2020-03-20,2,,,Mayotte,France,2020-03-18,-12.8431,45.1383,0,0,0,,,,,France|Mayotte|,03-20-2020.csv,290
+2020-03-20,2,,,Reunion,France,2020-03-18,-21.1351,55.2471,0,0,0,,,,,France|Reunion|,03-20-2020.csv,291
+2020-03-20,2,,,,Gambia,2020-03-18,13.4667,-16.6,0,0,0,,,,,Gambia||,03-20-2020.csv,299
+2020-03-20,2,,,Guam,US,2020-03-18,13.4443,144.7937,0,0,0,,,,,US|Guam|,03-20-2020.csv,293
+2020-03-20,2,,,Puerto Rico,US,2020-03-17,18.2,-66.5,0,0,0,,,,,US|Puerto Rico|,03-20-2020.csv,296
+2020-03-20,2,,,Guernsey,United Kingdom,2020-03-20,49.448196,-2.58949,0,0,0,,,,,United Kingdom|Guernsey|,03-20-2020.csv,326
+2020-03-20,2,,,Jersey,United Kingdom,2020-03-20,49.2138,-2.1358,0,0,0,,,,,United Kingdom|Jersey|,03-20-2020.csv,325
+2020-03-21,2,,,,Bahamas,2020-03-19,24.25,-76.0,0,0,0,,,,,Bahamas||,03-21-2020.csv,303
+2020-03-21,2,,,,Cabo Verde,2020-03-21,15.1111,-23.6167,1,0,0,,,,,Cabo Verde||,03-21-2020.csv,272
+2020-03-21,2,,,,Congo (Brazzaville),2020-03-17,-1.44,15.556,0,0,0,,,,,Congo (Brazzaville)||,03-21-2020.csv,302
+2020-03-21,2,,,Greenland,Denmark,2020-03-19,72.0,-40.0,0,0,0,,,,,Denmark|Greenland|,03-21-2020.csv,297
+2020-03-21,2,,,French Guiana,France,2020-03-18,4.0,-53.0,0,0,0,,,,,France|French Guiana|,03-21-2020.csv,293
+2020-03-21,2,,,Guadeloupe,France,2020-03-18,16.25,-61.5833,0,0,0,,,,,France|Guadeloupe|,03-21-2020.csv,294
+2020-03-21,2,,,Mayotte,France,2020-03-18,-12.8431,45.1383,0,0,0,,,,,France|Mayotte|,03-21-2020.csv,295
+2020-03-21,2,,,Reunion,France,2020-03-18,-21.1351,55.2471,0,0,0,,,,,France|Reunion|,03-21-2020.csv,296
+2020-03-21,2,,,,Gambia,2020-03-18,13.4667,-16.6,0,0,0,,,,,Gambia||,03-21-2020.csv,304
+2020-03-21,2,,,Guam,US,2020-03-18,13.4443,144.7937,0,0,0,,,,,US|Guam|,03-21-2020.csv,298
+2020-03-21,2,,,Puerto Rico,US,2020-03-17,18.2,-66.5,0,0,0,,,,,US|Puerto Rico|,03-21-2020.csv,301
+2020-03-21,2,,,Guernsey,United Kingdom,2020-03-21,49.448196,-2.58949,0,0,0,,,,,United Kingdom|Guernsey|,03-21-2020.csv,331
+2020-03-21,2,,,Jersey,United Kingdom,2020-03-21,49.2138,-2.1358,0,0,0,,,,,United Kingdom|Jersey|,03-21-2020.csv,330
+2020-03-22,3,11001,District of Columbia,District of Columbia,US,2020-03-22,38.90417773,-77.01655992,102,0,0,102,"District of Columbia, District of Columbia, US",,,US|District of Columbia|District of Columbia,03-22-2020.csv,1339
