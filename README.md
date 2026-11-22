@@ -1,67 +1,125 @@
-# Sala de crisis COVID-19
+# Sala de Crisis COVID-19 · Gestión de Datos (IN1232C)
 
-Proyecto semestral de Gestión de Datos (IN1232C, 2026-2), UCSC. Equipo N.º __.
+Plataforma analítica, Data Warehouse y tablero interactivo construidos sobre el registro histórico completo de COVID-19 de Johns Hopkins CSSE (22 de enero de 2020 al 9 de marzo de 2023), integrado con datos de vacunación de Our World in Data (OWID).
 
-Plataforma de datos sobre el registro histórico de COVID-19 de Johns Hopkins (22-ene-2020 al 9-mar-2023): ingesta de los 1.143 reportes diarios, control de calidad, Data Warehouse en PostgreSQL integrado con Our World in Data, análisis P1 a P7, pronóstico y alerta temprana, y un tablero para la sesión del Comité.
+## Estructura del repositorio
 
-| Integrante | Rol |
-|---|---|
-| Nicolás | A · Ingeniería de datos |
-| Dan | B · Calidad, ética y fuente externa |
-| Cristian | C · Modelos |
-| Leo | D · Tablero y comunicación |
+```text
+Proyecto_Gestion/
+├── README.md                          # Guía de reproducción paso a paso
+├── contribuciones.md                  # Aportes por integrante y uso de IA
+├── requirements.txt                   # Dependencias de Python
+├── .gitignore                         # Excluye data/raw/ y .venv/
+├── src/
+│   ├── 01_ingesta_y_unificacion.py    # Descarga 1.143 CSV + UID + OWID y unifica 5 esquemas a Parquet
+│   ├── 02_construir_dw.py             # Construye el modelo en estrella en DuckDB e integra OWID
+│   ├── 03_calidad_y_olap.py           # Reglas ejecutables (6 dimensiones), índice P4 y consultas OLAP
+│   ├── 04_modelos_y_alerta.py         # pronosticar(), alerta(), backtesting (3 cortes) y K-Means
+│   └── 05_analisis_preguntas.py       # Métricas y gráficos para P1, P2, P3, P7 y control R6
+├── notebooks/
+│   └── 00_exploracion.ipynb           # Exploración guiada (enero a junio de 2020)
+├── data/
+│   ├── clean/                         # Capa limpia (reportes_unificados.parquet y tablas resumen)
+│   └── dw_covid.duckdb                # Capa analítica (Data Warehouse en DuckDB)
+├── dashboard/
+│   └── app.py                         # Tablero interactivo en Streamlit (mapas y desafío en vivo)
+└── docs/
+    ├── diccionario_datos.md           # Diccionario de la tabla unificada (R2)
+    ├── figuras/                       # Gráficos generados por los scripts
+    ├── informe_tecnico.pdf            # Informe técnico completo (máx. 15 páginas)
+    └── informe_comite.pdf             # Informe ejecutivo al Comité (máx. 2 páginas, R8)
+```
 
-## Cómo reproducir el proyecto desde cero
+> **Nota sobre datos crudos:** La carpeta `data/raw/` está excluida en `.gitignore` y se regenera automáticamente al ejecutar el Paso 4.
 
-1. **Requisitos:** Python 3.11 o 3.12, PostgreSQL 15 o superior y Git.
-2. **Clonar el repositorio:**
+---
+
+## Requisitos previos
+
+- Python 3.10 o superior
+- Git (opcional, si se clona desde GitHub)
+- Conexión a internet para descargar los 1.143 reportes diarios de Johns Hopkins CSSE y el archivo de vacunación de Our World in Data.
+
+---
+
+## Pasos para reproducir el proyecto desde cero
+
+1. **Clonar el repositorio (o descomprimir el `.zip`) y entrar a la carpeta del proyecto:**
    ```bash
    git clone https://github.com/Vitalithis/Sala-de-crisis-COVID-19.git
-   cd Sala-de-crisis-COVID-19
+   cd Proyecto_Gestion
    ```
-3. **Crear el entorno e instalar las dependencias:**
+
+2. **Crear y activar un entorno virtual:**
+   - **Windows (Command Prompt / cmd):**
+     ```cmd
+     python -m venv .venv
+     .venv\Scripts\activate.bat
+     ```
+   - **Windows (PowerShell):**
+     ```powershell
+     python -m venv .venv
+     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+     .venv\Scripts\Activate.ps1
+     ```
+   - **macOS / Linux:**
+     ```bash
+     python3 -m venv .venv
+     source .venv/bin/activate
+     ```
+
+3. **Instalar las dependencias:**
    ```bash
-   python -m venv .venv
-   .venv\Scripts\activate          # Windows  (Linux/Mac: source .venv/bin/activate)
    pip install -r requirements.txt
    ```
-4. **Crear la base de datos:** `createdb -U postgres sala_crisis`. Después copiar `.env.example` a `.env` y ajustar usuario y contraseña.
-5. **Ejecutar el pipeline completo** (descarga, unificación, calidad y DW):
+
+4. **Ejecutar la ingesta y unificación de los 5 esquemas (R1):**
+   Descarga los 1.143 reportes diarios, las series globales, la tabla maestra UID y OWID en `data/raw/`, unifica los esquemas a `data/clean/reportes_unificados.parquet` y compara tamaño y velocidad CSV vs. Parquet.
    ```bash
-   python -m src.pipeline
+   python -u src/01_ingesta_y_unificacion.py
    ```
-   También se puede ejecutar un solo paso: `python -m src.pipeline descargar | unificar | calidad | dw`.
-6. **Ejecutar los notebooks en orden**, de `notebooks/00_exploracion.ipynb` a `notebooks/06_proteccion_datos.ipynb`.
-7. **Levantar el tablero:** `streamlit run dashboard/app.py`.
-8. **Ejecutar las pruebas:** `pytest -q`.
 
-> Los datos crudos (`data/raw/`) no se suben: el paso 5 los descarga. En `data/` solo quedan la capa limpia (Parquet) y la exportación del DW.
+5. **Construir el Data Warehouse en estrella en DuckDB (R3):**
+   Genera `data/dw_covid.duckdb` con `dim_fecha`, `dim_territorio`, `fact_covid` y `fact_vacunacion`, calcula casos/fallecidos nuevos diarios, concilia filas y reporta la tasa de cruce por código ISO3.
+   ```bash
+   python -u src/02_construir_dw.py
+   ```
 
-## Estructura
+6. **Ejecutar el control de calidad de 6 dimensiones y consultas OLAP (R2 y R3):**
+   Evalúa completitud, unicidad, validez, consistencia, exactitud y oportunidad, genera el índice de calidad por país (P4) y corre consultas `roll-up`, `drill-down`, `slice` y `dice` sobre DuckDB.
+   ```bash
+   python -u src/03_calidad_y_olap.py
+   ```
 
-```
-src/            código reutilizable (los notebooks solo lo llaman)
-  ingesta/      R1  descarga y unificación de los 5 esquemas
-  calidad/      R2  reglas de las 6 dimensiones e índice por país
-  dw/           R3  ETL hacia el modelo en estrella
-  externas/     R3  fuentes externas (OWID)
-  modelos/      R5  pronosticar(), alerta(), segmentación
-  proteccion/   R6  supresión de celdas pequeñas
-  pipeline.py       un solo comando para todo
-sql/            DDL del DW, vistas y consultas OLAP
-notebooks/      00 a 06, en orden de ejecución
-dashboard/      R7  app de Streamlit y capturas
-data/           clean/ (Parquet) y dw/ (exportación); raw/ está ignorado
-docs/           diccionario, decisiones, arquitectura, informes y guía del equipo
-tests/          pruebas mínimas (esquemas, que no haya fuga de datos)
-```
+7. **Ejecutar los modelos predictivos, alerta temprana y segmentación (R5, P5 y P6):**
+   Corre el backtesting de `pronosticar()` en 3 fechas de corte (MAE y MAPE), evalúa `alerta()` en la historia de Chile y ejecuta la segmentación K-Means de países.
+   ```bash
+   python -u src/04_modelos_y_alerta.py
+   ```
 
-## Entregables
+8. **Generar los análisis y gráficos de las preguntas del Comité (R4 y R6):**
+   Produce los resultados y figuras de P1, P2 (destacando Biobío), P3, P7 y la medición de supresión de celdas pequeñas en `docs/figuras/`.
+   ```bash
+   python -u src/05_analisis_preguntas.py
+   ```
 
-| Elemento | Ubicación |
-|---|---|
-| Diccionario de datos | [docs/diccionario_datos.md](docs/diccionario_datos.md) |
-| Informe técnico (máx. 15 págs.) | `docs/informe_tecnico.pdf` (fuente: `docs/informe_tecnico.md`) |
-| Informe al Comité (máx. 2 págs.) | `docs/informe_comite.pdf` (fuente: `docs/informe_comite.md`) |
-| Tablero | [dashboard/](dashboard/) |
-| Contribuciones y uso de IA | [contribuciones.md](contribuciones.md) |
+9. **Levantar el tablero interactivo en Streamlit (R7 y Desafío en vivo):**
+   ```bash
+   streamlit run dashboard/app.py
+   ```
+   El tablero se abrirá en `http://localhost:8501` con filtros por país o región de Chile, fecha de corte, mapas georreferenciados, control de divulgación (R6) y la pestaña **Desafío en Vivo** para ejecutar `pronosticar()` y `alerta()` sin fuga de datos.
+
+---
+
+## Reproducción alternativa en Google Colab (pipeline de datos y análisis)
+
+1. Subir el `.zip` del repositorio a Colab y descomprimirlo con `!unzip Proyecto_Gestion.zip`.
+2. Instalar dependencias: `!pip install -r requirements.txt`.
+3. Ejecutar los scripts en orden desde una celda:
+   ```python
+   !python -u src/01_ingesta_y_unificacion.py
+   !python -u src/02_construir_dw.py
+   !python -u src/03_calidad_y_olap.py
+   !python -u src/04_modelos_y_alerta.py
+   !python -u src/05_analisis_preguntas.py
+   ```

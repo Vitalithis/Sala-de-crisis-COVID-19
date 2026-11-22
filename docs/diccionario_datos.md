@@ -1,28 +1,22 @@
-# Diccionario de datos (R2)
+# Diccionario de Datos · Tabla Unificada (`reportes_unificados.parquet`)
 
-Tabla unificada: `data/clean/reportes_diarios_unificados.parquet` (generada por `src/ingesta/unificar.py`).
-Grano: una fila por territorio reportado y por archivo diario.
+Tabla consolidada a partir de los 1.143 reportes diarios de Johns Hopkins CSSE (4.287.473 filas), unificando los 5 esquemas históricos en formato `snake_case` y fechas ISO (`AAAA-MM-DD`).
 
-| Columna | Significado | Tipo | Dominio / formato | Origen | Existe desde (esquema) |
-|---|---|---|---|---|---|
-| fecha_reporte | Fecha del dato (nombre del archivo) | date | 2020-01-22 a 2023-03-09 | Nombre del archivo | 1 |
-| esquema | Etapa del formato de origen | int8 | 1 a 5 | Derivada de la fecha | 1 |
-| fips | Código FIPS (EE.UU.) | str | 5 dígitos | FIPS | 3 (22-mar-2020) |
-| admin2 | Condado (EE.UU.) | str | | Admin2 | 3 |
-| province_state | Provincia, estado o región | str | | Province/State, Province_State | 1 |
-| country_region | País o entidad, normalizado | str | Ver NORMALIZAR_PAIS | Country/Region, Country_Region | 1 |
-| last_update | Cuándo JHU modificó la fila (no es la fecha del dato) | str ISO | AAAA-MM-DD | Last Update, Last_Update | 1 |
-| lat | Latitud | float | -90 a 90 | Latitude, Lat | 2 (1-mar-2020) |
-| long | Longitud | float | -180 a 180 | Longitude, Long_ | 2 |
-| confirmed | Casos confirmados acumulados | Int64 | >= 0 | Confirmed | 1 |
-| deaths | Fallecidos acumulados | Int64 | >= 0 | Deaths | 1 |
-| recovered | Recuperados acumulados (se deja de actualizar en ago-2021) | Int64 | >= 0 | Recovered | 1 |
-| active | Casos activos | Int64 | | Active | 3 |
-| combined_key | Clave textual del territorio | str | | Combined_Key | 3 |
-| incident_rate | Casos por 100.000 según JHU | float | >= 0 | Incidence_Rate, Incident_Rate | 4 (29-may-2020) |
-| case_fatality_ratio | Letalidad según JHU (%) | float | 0 a 100 | Case-Fatality_Ratio, Case_Fatality_Ratio | 4 |
-| clave_territorio | país\|provincia\|condado | str | | Derivada | 1 |
-| archivo_origen | Archivo CSV de origen (linaje) | str | MM-DD-AAAA.csv | Derivada | 1 |
-| fila_origen | Línea del CSV de origen (linaje) | int | >= 2 | Derivada | 1 |
-
-TODO (B): revisar los dominios con los datos reales, agregar % de nulos por columna y documentar las tablas del DW.
+| Columna | Significado | Tipo | Dominio / Valores permitidos | Origen | Existe desde |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `fecha_reporte` | Fecha del reporte diario extraída del nombre del archivo | string (ISO) | `2020-01-22` a `2023-03-09` | Generada en ETL | 2020-01-22 (Etapa 1) |
+| `esquema` | Versión del esquema original del CSV fuente | int | Entero `1` a `5` | Generada en ETL | 2020-01-22 (Etapa 1) |
+| `fips` | Código federal de condado de EE. UU. | string | 5 dígitos o nulo | JHU Daily Reports | 2020-03-22 (Etapa 3) |
+| `admin2` | Nombre del condado o división administrativa nivel 2 | string | Texto libre o nulo | JHU Daily Reports | 2020-03-22 (Etapa 3) |
+| `province_state` | Región, provincia o estado (incluye 16 regiones de Chile desde fines de mayo 2020) | string | Texto libre o nulo | JHU Daily Reports | 2020-01-22 (Etapa 1) |
+| `country_region` | País o entidad especial (ej. `Chile`, `Diamond Princess`) | string | Texto (`Mainland China` normalizado a `China`) | JHU Daily Reports | 2020-01-22 (Etapa 1) |
+| `combined_key` | Llave compuesta `admin2, province_state, country_region` | string | No nulo (construida en etapas 1–2) | JHU / ETL | 2020-03-22 (Etapa 3) |
+| `last_update` | Marca de tiempo en que JHU actualizó el registro | string | Timestamps heterogéneos | JHU Daily Reports | 2020-01-22 (Etapa 1) |
+| `lat` | Latitud geográfica del territorio | float | `[-90.0, 90.0]` o nulo | JHU Daily Reports | 2020-03-01 (Etapa 2) |
+| `long` | Longitud geográfica del territorio | float | `[-180.0, 180.0]` o nulo | JHU Daily Reports | 2020-03-01 (Etapa 2) |
+| `confirmed` | Casos confirmados acumulados a la fecha | float | `>= 0` (algunos retrocesos marcados en DW) | JHU Daily Reports | 2020-01-22 (Etapa 1) |
+| `deaths` | Fallecidos acumulados a la fecha | float | `>= 0` (inconsistencias `deaths > confirmed` marcadas) | JHU Daily Reports | 2020-01-22 (Etapa 1) |
+| `recovered` | Recuperados acumulados (dejó de actualizarse en ago-2021) | float | `>= 0` o nulo | JHU Daily Reports | 2020-01-22 (Etapa 1) |
+| `active` | Casos activos estimados por JHU | float | Numérico o nulo | JHU Daily Reports | 2020-03-22 (Etapa 3) |
+| `incident_rate` | Casos acumulados por 100.000 habitantes | float | `>= 0` o nulo | JHU Daily Reports | 2020-05-29 (Etapa 4) |
+| `case_fatality_ratio` | Razón de letalidad aparente (`deaths / confirmed * 100`) | float | `[0, 100]` o nulo | JHU Daily Reports | 2020-05-29 (Etapa 4) |
