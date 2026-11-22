@@ -30,10 +30,10 @@ Cada rol tiene un **dueño** y un **revisor**. El revisor aprueba los PR del due
 
 | Rol | Persona | Componentes (puntos de la rúbrica A) | Archivos de los que es dueño | Revisor |
 |---|---|---|---|---|
-| **A · Ingeniería de datos** | | R1 (12), R3 (13) | `src/ingesta/`, `src/dw/`, `src/pipeline.py`, `sql/`, notebooks 01 y 03, `docs/arquitectura.md` | C |
-| **B · Calidad, ética y fuente externa** | | R2 (15), R6 (7), P3, P4, P7 | `src/calidad/`, `src/externas/`, `src/proteccion/`, notebooks 02 y 06, `docs/diccionario_datos.md`, `docs/decisiones_calidad.md`, `docs/proteccion_datos.md` | D |
-| **C · Modelos** | | R5 (15), P5, P6 | `src/modelos/`, notebook 05, `tests/` | A |
-| **D · Tablero y comunicación** | | R7 (10), R8 (5), P1, P2, Proceso | `dashboard/`, notebook 00, `README.md`, `docs/informe_*.md`, `docs/guion_comite.md`, `contribuciones.md` | B |
+| **A · Ingeniería de datos** | Nicolás | R1 (12), R3 (13) | `src/ingesta/`, `src/dw/`, `src/pipeline.py`, `sql/`, notebooks 01 y 03, `docs/arquitectura.md` | Cristian (C) |
+| **B · Calidad, ética y fuente externa** | Dan | R2 (15), R6 (7), P3, P4, P7 | `src/calidad/`, `src/externas/`, `src/proteccion/`, notebooks 02 y 06, `docs/diccionario_datos.md`, `docs/decisiones_calidad.md`, `docs/proteccion_datos.md` | Leo (D) |
+| **C · Modelos** | Cristian | R5 (15), P5, P6 | `src/modelos/`, notebook 05, `tests/` | Nicolás (A) |
+| **D · Tablero y comunicación** | Leo | R7 (10), R8 (5), P1, P2, Proceso | `dashboard/`, notebook 00, `README.md`, `docs/informe_*.md`, `docs/guion_comite.md`, `contribuciones.md` | Dan (B) |
 
 El notebook 04 (P1 a P7) se divide por secciones: D escribe P1 y P2, B escribe P3, P4 y P7, y C escribe P5 y P6. Para evitar conflictos de merge, **cada uno trabaja su parte en un notebook propio** (`04a_P1_P2.ipynb`, `04b_P3_P4_P7.ipynb`, `04c_P5_P6.ipynb`) y D los consolida el lunes.
 
@@ -112,13 +112,17 @@ Regla del lunes: **no se agregan funciones nuevas al tablero**, solo correccione
 - Martes: sesión del Comité según [guion_comite.md](guion_comite.md).
 - Miércoles: exportar los informes a PDF, completar `contribuciones.md`, probar el README una última vez, crear el `.zip` y subirlo a EVA **antes de las 20:00** (margen de 4 horas).
 
-## 6. Flujo de trabajo con Git
+## 6. Flujo de trabajo con Git (`dev` como rama base)
 
-1. `main` siempre funciona. Nadie hace push directo a `main`.
-2. Una rama por tarea: `a/unificar-esquemas`, `b/reglas-calidad`, `c/backtesting`, `d/tablero-mapas`.
+1. **`dev` es la rama base de trabajo.** `main` queda reservada para versiones estables (hitos y entrega final, vía PR desde `dev`). Nadie hace push directo a `main` ni a `dev`.
+2. Cada integrante saca sus ramas **desde `dev`**, una por tarea:
+   - Nicolás (`a/...`): `a/unificar-esquemas`, `a/modelo-estrella`
+   - Dan (`b/...`): `b/reglas-calidad`, `b/owid-proteccion`
+   - Cristian (`c/...`): `c/pronostico-alerta`, `c/backtesting`
+   - Leo (`d/...`): `d/tablero-mapas`, `d/informes`
 3. Commits pequeños y descriptivos: `feat(calidad): regla de días sin reporte`, `fix(dw): duplicados en vw_pais_dia`.
-4. Pull request hacia `main` con la plantilla; lo aprueba el revisor asignado (sección 3).
-5. Antes de empezar cada bloque: `git pull origin main`.
+4. Pull request **hacia `dev`** con la plantilla; lo aprueba el revisor asignado (sección 3).
+5. Antes de empezar cada bloque: `git checkout dev && git pull origin dev`.
 6. **Un notebook, un dueño.** La lógica va en `src/` y los notebooks solo la llaman; así se evitan los conflictos en archivos `.ipynb`.
 7. Nunca subir `data/raw/` ni `.env`.
 

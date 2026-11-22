@@ -6,10 +6,10 @@ Plataforma de datos sobre el registro histórico de COVID-19 de Johns Hopkins (2
 
 | Integrante | Rol |
 |---|---|
-| (nombre) | A · Ingeniería de datos |
-| (nombre) | B · Calidad, ética y fuente externa |
-| (nombre) | C · Modelos |
-| (nombre) | D · Tablero y comunicación |
+| Nicolás | A · Ingeniería de datos |
+| Dan | B · Calidad, ética y fuente externa |
+| Cristian | C · Modelos |
+| Leo | D · Tablero y comunicación |
 
 ## Cómo reproducir el proyecto desde cero
 
