@@ -1,0 +1,8 @@
+dimension,regla,filas_afectadas,pct,umbral_pct,estado
+Completitud,Territorios sin población en UID,101775,2.3738,5.0,OK
+Unicidad,Duplicados (fecha × territorio) en crudo,6,0.0001,0.01,OK
+Validez,Acumulados negativos o coords fuera de rango,6,0.0001,0.1,OK
+Consistencia,Fallecidos mayores que confirmados,10777,0.2514,0.05,RECHAZA
+Exactitud,Días con acumulado que retrocede,44582,1.0398,1.0,ALERTA
+Exactitud,Picos bruscos por acumulación de rezagos,11354,0.2648,0.5,OK
+Oportunidad,Días sin reporte (0 nuevos en 2022-23),19068,0.4447,1.0,OK

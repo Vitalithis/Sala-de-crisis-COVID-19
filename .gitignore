@@ -1,5 +1,8 @@
-# Datos crudos: se descargan con el codigo (R1). Nunca se suben.
+# Datos crudos y artefactos binarios pesados (se regeneran con src/01 y src/02)
 data/raw/
+data/dw_covid.duckdb
+data/dw_covid.duckdb.wal
+data/clean/*.parquet
 *.csv.gz
 
 # Entorno
