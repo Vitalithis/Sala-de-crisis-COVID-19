@@ -9,8 +9,23 @@ import streamlit as st
 
 st.set_page_config(
     page_title="Sala de Crisis COVID-19 · IN1232C",
-    page_icon="🦠",
     layout="wide",
+)
+
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+    html, body, [class*="css"] {
+        font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    h1, h2, h3 {
+        letter-spacing: -0.015em;
+        font-weight: 600;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 DW_PATH = "data/dw_covid.duckdb"
@@ -130,7 +145,7 @@ def aplicar_supresion(valor: float, poblacion: float) -> str:
 # --- SIDEBAR: Filtros globales ---
 paises, regiones_cl = cargar_listas_territorios()
 
-st.sidebar.title("🦠 Sala de Crisis COVID-19")
+st.sidebar.title("Sala de Crisis COVID-19")
 st.sidebar.caption("Gestión de Datos · IN1232C · UCSC")
 
 tipo_terr = st.sidebar.radio("Nivel de territorio", ["País", "Región de Chile"], horizontal=True)
@@ -154,23 +169,15 @@ st.sidebar.markdown("**Umbrales de Alerta Temprana (R5)**")
 umbral_inc = st.sidebar.slider("Incidencia 7d mínima (c/100k)", 10.0, 100.0, 35.0, 5.0)
 umbral_var = st.sidebar.slider("Variación semanal mínima (%)", 10.0, 60.0, 25.0, 5.0)
 
-st.sidebar.divider()
-st.sidebar.info(
-    "**Advertencias de calidad y ética (R2 / R6):**\n"
-    "- La letalidad aparente depende del nivel de testeo de cada país.\n"
-    "- Chile cambia de granularidad (nacional → 16 regiones) a fines de mayo de 2020.\n"
-    "- Conteos entre 1 y 4 en territorios con <50.000 hab. se suprimen (control de divulgación)."
-)
-
 # --- TÍTULO ---
 st.title(f"Sala de Crisis COVID-19 · {territorio}")
 st.caption(f"Corte de información al **{fecha_corte}** · Fuente: Johns Hopkins CSSE + Our World in Data (DuckDB DW)")
 
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📊 Panorama y Tendencias",
-    "🗺️ Mapas Mundial y Chile",
-    "🚨 Desafío en Vivo (Pronóstico y Alerta)",
-    "🛡️ Calidad (R2) y Segmentación (P5)",
+    "Panorama y Tendencias",
+    "Mapas Mundial y Chile",
+    "Desafío en Vivo (Pronóstico y Alerta)",
+    "Calidad (R2) y Segmentación (P5)",
 ])
 
 # =====================================================================
@@ -186,15 +193,15 @@ with tab1:
         # Banner de alerta temprana con umbral visible
         if estado_alerta["activa"]:
             st.error(
-                f"🚨 **ALERTA TEMPRANA ACTIVA** al {estado_alerta['fecha']} — "
-                f"Incidencia 7d: **{estado_alerta['incidencia_7d']} / 100k** (umbral ≥ {umbral_inc}) · "
-                f"Variación semanal: **+{estado_alerta['variacion_semanal_pct']} %** (umbral ≥ {umbral_var} %)"
+                f"**ALERTA TEMPRANA ACTIVA** al {estado_alerta['fecha']} — "
+                f"Incidencia 7d: **{estado_alerta['incidencia_7d']} / 100k** (umbral >= {umbral_inc}) · "
+                f"Variación semanal: **+{estado_alerta['variacion_semanal_pct']} %** (umbral >= {umbral_var} %)"
             )
         else:
             st.success(
-                f"✅ **Sin alerta activa** al {estado_alerta['fecha']} — "
-                f"Incidencia 7d: **{estado_alerta['incidencia_7d']} / 100k** (umbral ≥ {umbral_inc}) · "
-                f"Variación semanal: **{estado_alerta['variacion_semanal_pct']} %** (umbral ≥ {umbral_var} %)"
+                f"**Sin alerta activa** al {estado_alerta['fecha']} — "
+                f"Incidencia 7d: **{estado_alerta['incidencia_7d']} / 100k** (umbral >= {umbral_inc}) · "
+                f"Variación semanal: **{estado_alerta['variacion_semanal_pct']} %** (umbral >= {umbral_var} %)"
             )
 
         # Tarjetas KPI (con supresión R6)
@@ -215,6 +222,10 @@ with tab1:
             xaxis_title="Fecha", yaxis_title="Casos diarios", height=380, hovermode="x unified",
         )
         st.plotly_chart(fig_tend, use_container_width=True)
+        st.caption(
+            "Las barras muestran los casos nuevos reportados cada día y la línea roja su media móvil de 7 días "
+            "para suavizar rezagos de fin de semana."
+        )
 
         # Si es país, mostrar cruce con vacunación (P3)
         if tipo_terr == "País":
@@ -228,6 +239,7 @@ with tab1:
                 fig_vac.update_traces(line_color="#1B7F5C")
                 fig_vac.update_layout(height=280)
                 st.plotly_chart(fig_vac, use_container_width=True)
+                st.caption("Porcentaje acumulado de población con esquema completo de vacunación según Our World in Data.")
 
     except Exception as e:
         st.warning(f"No hay datos disponibles para **{territorio}** al {fecha_corte}. ({e})")
@@ -251,6 +263,7 @@ with tab2:
             )
             fig_mundo.update_layout(height=450, margin=dict(l=0, r=0, t=40, b=0))
             st.plotly_chart(fig_mundo, use_container_width=True)
+            st.caption("El tamaño de cada círculo indica casos acumulados por 100.000 hab. y el color la mortalidad acumulada por 100.000 hab.")
 
             st.markdown("**Top 10 países por incidencia acumulada (c/100k)**")
             st.dataframe(
@@ -275,6 +288,7 @@ with tab2:
             )
             fig_cl.update_layout(height=450, margin=dict(l=0, r=0, t=10, b=0))
             st.plotly_chart(fig_cl, use_container_width=True)
+            st.caption("Incidencia acumulada por 100.000 hab. en las 16 regiones de Chile desde el 20 de mayo de 2020.")
 
             st.markdown("**Ranking regional de Chile (destacando Biobío)**")
             st.dataframe(
@@ -288,69 +302,137 @@ with tab2:
 with tab3:
     st.subheader(f"Desafío en Vivo · {territorio} al {fecha_corte} (horizonte = 14 días)")
     horizonte = st.number_input("Horizonte de pronóstico (días)", min_value=7, max_value=30, value=14)
-    revelar_real = st.toggle("🔍 Comparar con lo que realmente ocurrió después de la fecha de corte", value=False)
+    revelar_real = st.toggle("Comparar con lo que realmente ocurrió después de la fecha de corte", value=False)
     try:
         hist = modelos.obtener_serie_territorio(territorio, fecha_corte=fecha_corte)
         pred = modelos.pronosticar(territorio, fecha_corte=fecha_corte, horizonte=int(horizonte))
         al = modelos.alerta(territorio, fecha_corte, umbral_var_pct=umbral_var, umbral_inc=umbral_inc)
 
         k1, k2, k3 = st.columns(3)
-        k1.metric("Estado de alerta al corte", "🚨 ACTIVA" if al["activa"] else "✅ Inactiva")
-        k2.metric("Pronóstico día +14 (Base MM7)", f"{pred['pred_base_mm7'].iloc[-1]:,.1f}")
-        k3.metric("Pronóstico día +14 (Holt)", f"{pred['pred_holt'].iloc[-1]:,.1f}")
+        k1.metric(
+            "Estado de alerta al corte",
+            "ACTIVA" if al["activa"] else "Inactiva",
+            help="Activa cuando la incidencia a 7 días y la variación semanal superan los umbrales de la barra lateral.",
+        )
+        k2.metric(
+            f"Pronóstico día +{int(horizonte)} (Base MM7)",
+            f"{pred['pred_base_mm7'].iloc[-1]:,.1f}",
+            help="Línea base constante igual a la última media móvil de 7 días observada en la fecha de corte.",
+        )
+        k3.metric(
+            f"Pronóstico día +{int(horizonte)} (Holt)",
+            f"{pred['pred_holt'].iloc[-1]:,.1f}",
+            help="Proyección mediante suavizamiento exponencial de Holt con tendencia amortiguada entrenada solo hasta la fecha de corte.",
+        )
+        st.caption(
+            "Ambos pronósticos estiman casos diarios suavizados (MM7) usando exclusivamente datos hasta la fecha de corte, "
+            "sin fuga de información futura."
+        )
 
         ventana_hist = hist.tail(45)
         fig_p = go.Figure()
-        fig_p.add_trace(go.Scatter(x=ventana_hist["fecha"], y=ventana_hist["mm7_casos"], name="Histórico MM7 (≤ corte)", line=dict(color="#2C3E50", width=2.5)))
-        fig_p.add_trace(go.Scatter(x=pred["fecha"], y=pred["pred_base_mm7"], name="Modelo Base (MM7)", line=dict(color="#7F8C8D", dash="dash")))
-        fig_p.add_trace(go.Scatter(x=pred["fecha"], y=pred["pred_holt"], name="Modelo Holt Amortiguado", line=dict(color="#D00120", width=2.5, dash="dot")))
+        fig_p.add_trace(go.Scatter(x=ventana_hist["fecha"], y=ventana_hist["mm7_casos"], name="Histórico MM7 (<= corte)", line=dict(color="#60A5FA", width=2.5)))
+        fig_p.add_trace(go.Scatter(x=pred["fecha"], y=pred["pred_base_mm7"], name="Modelo Base (MM7)", line=dict(color="#94A3B8", dash="dash")))
+        fig_p.add_trace(go.Scatter(x=pred["fecha"], y=pred["pred_holt"], name="Modelo Holt Amortiguado", line=dict(color="#EF4444", width=2.5, dash="dot")))
 
         if revelar_real:
             real_full = modelos.obtener_serie_territorio(territorio)
             comp = pred.merge(real_full[["fecha", "mm7_casos"]], on="fecha", how="inner")
             if not comp.empty:
-                fig_p.add_trace(go.Scatter(x=comp["fecha"], y=comp["mm7_casos"], name="Real ocurrido (> corte)", line=dict(color="#1B7F5C", width=3)))
+                fig_p.add_trace(go.Scatter(x=comp["fecha"], y=comp["mm7_casos"], name="Real ocurrido (> corte)", line=dict(color="#10B981", width=3)))
                 mae_b = np.abs(comp["mm7_casos"] - comp["pred_base_mm7"]).mean()
                 mae_h = np.abs(comp["mm7_casos"] - comp["pred_holt"]).mean()
                 mape_b = (np.abs(comp["mm7_casos"] - comp["pred_base_mm7"]) / comp["mm7_casos"].replace(0, np.nan)).dropna().mean() * 100
                 mape_h = (np.abs(comp["mm7_casos"] - comp["pred_holt"]) / comp["mm7_casos"].replace(0, np.nan)).dropna().mean() * 100
-                st.info(f"**Evaluación contra realidad ({len(comp)} días):** Base MM7 → MAE={mae_b:.1f}, MAPE={mape_b:.1f}% | **Holt → MAE={mae_h:.1f}, MAPE={mape_h:.1f}%**")
+                st.info(f"**Evaluación contra realidad ({len(comp)} días):** Base MM7 -> MAE={mae_b:.1f}, MAPE={mape_b:.1f}% | **Holt -> MAE={mae_h:.1f}, MAPE={mape_h:.1f}%**")
 
-        fig_p.add_vline(x=pd.to_datetime(fecha_corte).timestamp() * 1000, line_dash="dash", line_color="black")
+        fig_p.add_vline(x=pd.to_datetime(fecha_corte).timestamp() * 1000, line_dash="dash", line_color="#94A3B8")
         fig_p.update_layout(
             title=f"Pronóstico sin fuga de datos · {territorio} (corte: {fecha_corte})",
             xaxis_title="Fecha", yaxis_title="Casos diarios (MM7)", height=420, hovermode="x unified",
         )
         st.plotly_chart(fig_p, use_container_width=True)
+        st.caption(
+            "La línea vertical punteada marca la fecha de corte. Activa el selector superior para superponer la curva real observada después del corte "
+            "y medir el error (MAE y MAPE)."
+        )
     except Exception as e:
         st.error(f"No se pudo ejecutar el pronóstico para {territorio} en {fecha_corte}: {e}")
 
 # =====================================================================
-# TAB 4: CALIDAD (R2) Y SEGMENTACIÓN (P5)
+# TAB 4: CALIDAD (R2) Y SEGMENTACIÓN (P5) · DISEÑO VERTICAL 1x4
 # =====================================================================
 with tab4:
-    col_q1, col_q2 = st.columns(2)
-    with col_q1:
-        st.subheader("Control de calidad · 6 dimensiones (R2)")
-        if os.path.exists("data/clean/reglas_calidad.csv"):
-            st.dataframe(pd.read_csv("data/clean/reglas_calidad.csv"), use_container_width=True, hide_index=True)
-        st.subheader("Top 10 países con peor índice de calidad (P4)")
-        if os.path.exists("data/clean/indice_calidad_paises.csv"):
-            st.dataframe(pd.read_csv("data/clean/indice_calidad_paises.csv").head(10), use_container_width=True, hide_index=True)
+    st.subheader("1. Control de calidad · 6 dimensiones (R2)")
+    if os.path.exists("data/clean/reglas_calidad.csv"):
+        st.dataframe(pd.read_csv("data/clean/reglas_calidad.csv"), use_container_width=True, hide_index=True)
+        st.caption("Evaluación automática sobre las 4.287.467 filas de fact_covid en DuckDB.")
 
-    with col_q2:
-        st.subheader("Segmentación de países · K-Means (P5)")
-        if os.path.exists("data/clean/segmentacion_paises.csv"):
-            seg = pd.read_csv("data/clean/segmentacion_paises.csv")
-            fig_seg = px.scatter(
-                seg, x="casos_100k", y="fallecidos_100k", color=seg["cluster"].astype(str),
-                size="population", hover_name="country_region",
-                hover_data=["letalidad_pct", "max_vac_pct"],
-                labels={"casos_100k": "Casos por 100k", "fallecidos_100k": "Fallecidos por 100k", "color": "Cluster"},
-                title="Grupos de países por carga epidémica y mortalidad",
+    st.divider()
+    st.subheader("2. Top 10 países con peor índice de calidad (P4)")
+    if os.path.exists("data/clean/indice_calidad_paises.csv"):
+        st.dataframe(pd.read_csv("data/clean/indice_calidad_paises.csv").head(10), use_container_width=True, hide_index=True)
+        st.caption(
+            "Índice 0–100 que penaliza inconsistencias (deaths > confirmed), retrocesos en acumulados, días sin reporte y días faltantes."
+        )
+
+    st.divider()
+    st.subheader("3. Segmentación de países · K-Means (P5)")
+    if os.path.exists("data/clean/segmentacion_paises.csv"):
+        seg = pd.read_csv("data/clean/segmentacion_paises.csv").copy()
+        nombres_cluster = {
+            0: "0 · Baja incidencia y baja vacunación",
+            1: "1 · Alta carga epidémica y alta vacunación",
+            2: "2 · Atípico (letalidad extrema, vac. mínima)",
+            3: "3 · Carga moderada y alta vacunación",
+        }
+        seg["perfil"] = seg["cluster"].map(nombres_cluster).fillna(seg["cluster"].astype(str))
+        seg["tam_log"] = np.log10(seg["population"].clip(lower=10_000))
+        fig_seg = px.scatter(
+            seg,
+            x="casos_100k",
+            y="fallecidos_100k",
+            color="perfil",
+            size="tam_log",
+            size_max=18,
+            opacity=0.8,
+            hover_name="country_region",
+            hover_data={"population": ":,", "letalidad_pct": ":.2f", "max_vac_pct": ":.1f", "tam_log": False, "perfil": False},
+            labels={
+                "casos_100k": "Casos acumulados por 100.000 hab.",
+                "fallecidos_100k": "Fallecidos acumulados por 100.000 hab.",
+                "perfil": "Grupo (K-Means)",
+            },
+            title="Grupos de países según carga epidémica, mortalidad y vacunación (tamaño proporcional a log10 de población)",
+        )
+        fig_seg.update_layout(height=440, legend=dict(orientation="h", yanchor="bottom", y=-0.28, xanchor="left", x=0))
+        st.plotly_chart(fig_seg, use_container_width=True)
+        st.caption(
+            "Cada punto representa un país. El tamaño usa escala logarítmica de población para evitar que países muy poblados oculten al resto."
+        )
+
+        resumen_seg = (
+            seg.groupby("perfil", as_index=False)
+            .agg(
+                paises=("country_region", "count"),
+                casos_100k_prom=("casos_100k", "mean"),
+                fallecidos_100k_prom=("fallecidos_100k", "mean"),
+                letalidad_prom_pct=("letalidad_pct", "mean"),
+                vacunacion_max_prom_pct=("max_vac_pct", "mean"),
             )
-            st.plotly_chart(fig_seg, use_container_width=True)
+            .round(1)
+        )
+        st.dataframe(resumen_seg, use_container_width=True, hide_index=True)
 
-        st.subheader("Backtesting en 3 fechas de corte · Chile (R5)")
-        if os.path.exists("data/clean/backtesting_chile.csv"):
-            st.dataframe(pd.read_csv("data/clean/backtesting_chile.csv"), use_container_width=True, hide_index=True)
+    st.divider()
+    st.subheader("4. Backtesting en 3 fechas de corte · Chile (R5)")
+    if os.path.exists("data/clean/backtesting_chile.csv"):
+        st.dataframe(pd.read_csv("data/clean/backtesting_chile.csv"), use_container_width=True, hide_index=True)
+        st.caption("Comparación del error a 14 días (MAE y MAPE) entre modelo Base MM7 y Holt amortiguado en tres momentos de la pandemia.")
+
+    with st.expander("Notas metodológicas y control de divulgación (R2 / R6)", expanded=False):
+        st.markdown(
+            "- La letalidad aparente depende del nivel de testeo de cada país.\n"
+            "- Chile cambia de granularidad (nacional a 16 regiones) a fines de mayo de 2020.\n"
+            "- Conteos entre 1 y 4 en territorios con menos de 50.000 habitantes se suprimen como `<5 (suprimido R6)`."
+        )
