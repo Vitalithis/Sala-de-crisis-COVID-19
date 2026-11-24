@@ -335,6 +335,7 @@ with tab3:
         fig_p.add_trace(go.Scatter(x=pred["fecha"], y=pred["pred_base_mm7"], name="Modelo Base (MM7)", line=dict(color="#94A3B8", dash="dash")))
         fig_p.add_trace(go.Scatter(x=pred["fecha"], y=pred["pred_holt"], name="Modelo Holt Amortiguado", line=dict(color="#EF4444", width=2.5, dash="dot")))
 
+        comp = None
         if revelar_real:
             real_full = modelos.obtener_serie_territorio(territorio)
             comp = pred.merge(real_full[["fecha", "mm7_casos"]], on="fecha", how="inner")
@@ -345,6 +346,11 @@ with tab3:
                 mape_b = (np.abs(comp["mm7_casos"] - comp["pred_base_mm7"]) / comp["mm7_casos"].replace(0, np.nan)).dropna().mean() * 100
                 mape_h = (np.abs(comp["mm7_casos"] - comp["pred_holt"]) / comp["mm7_casos"].replace(0, np.nan)).dropna().mean() * 100
                 st.info(f"**Evaluación contra realidad ({len(comp)} días):** Base MM7 -> MAE={mae_b:.1f}, MAPE={mape_b:.1f}% | **Holt -> MAE={mae_h:.1f}, MAPE={mape_h:.1f}%**")
+            else:
+                st.warning(
+                    f"No existen datos reales posteriores al **{fecha_corte}** (el registro histórico de Johns Hopkins "
+                    "termina el `2023-03-09`). Selecciona una fecha de corte anterior en la barra lateral para comparar contra la realidad."
+                )
 
         fig_p.add_vline(x=pd.to_datetime(fecha_corte).timestamp() * 1000, line_dash="dash", line_color="#94A3B8")
         fig_p.update_layout(
@@ -356,6 +362,23 @@ with tab3:
             "La línea vertical punteada marca la fecha de corte. Activa el selector superior para superponer la curva real observada después del corte "
             "y medir el error (MAE y MAPE)."
         )
+
+        if comp is not None and not comp.empty:
+            st.markdown("**Detalle día a día: pronóstico vs. valor real observado (MM7)**")
+            tabla_comp = pd.DataFrame({
+                "Fecha": pd.to_datetime(comp["fecha"]).dt.strftime("%Y-%m-%d"),
+                "Real (MM7)": comp["mm7_casos"].round(1),
+                "Base MM7": comp["pred_base_mm7"].round(1),
+                "Dif. Base": (comp["pred_base_mm7"] - comp["mm7_casos"]).round(1),
+                "Holt": comp["pred_holt"].round(1),
+                "Dif. Holt": (comp["pred_holt"] - comp["mm7_casos"]).round(1),
+                "Error % Holt": (
+                    (comp["pred_holt"] - comp["mm7_casos"]).abs()
+                    / comp["mm7_casos"].replace(0, np.nan)
+                    * 100
+                ).round(1),
+            })
+            st.dataframe(tabla_comp, use_container_width=True, hide_index=True)
     except Exception as e:
         st.error(f"No se pudo ejecutar el pronóstico para {territorio} en {fecha_corte}: {e}")
 
