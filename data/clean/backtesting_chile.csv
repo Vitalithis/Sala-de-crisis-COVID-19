@@ -1,7 +1,10 @@
 fecha_corte,escenario,modelo,MAE,MAPE_pct
 2021-03-15,Ola 2 (otoño 2021),Base (MM7),1094.1,17.9
 2021-03-15,Ola 2 (otoño 2021),Holt amortiguado,650.5,10.5
+2021-03-15,Ola 2 (otoño 2021),"ARIMA(1,1,1)",414.7,6.7
 2021-12-28,P6 · Inicio Ómicron,Base (MM7),716.3,29.2
 2021-12-28,P6 · Inicio Ómicron,Holt amortiguado,783.8,32.8
+2021-12-28,P6 · Inicio Ómicron,"ARIMA(1,1,1)",864.9,37.0
 2022-05-15,Ola invierno 2022,Base (MM7),2890.3,44.0
 2022-05-15,Ola invierno 2022,Holt amortiguado,1822.6,26.2
+2022-05-15,Ola invierno 2022,"ARIMA(1,1,1)",1631.9,23.3

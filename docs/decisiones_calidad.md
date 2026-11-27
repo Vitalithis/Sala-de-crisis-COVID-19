@@ -48,3 +48,21 @@ Donde:
 - **`Iran (Islamic Republic of)`, `Republic of Korea` y `South Korea`** aparecen con pocos días reportados porque corresponden a denominaciones previas al mapeo canónico en los primeros esquemas de 2020.
 - **`Tanzania`, `Congo (Brazzaville)`, `Nicaragua`, `Benin` y `Cameroon`** presentan entre 871 y 981 días sin cambio reportado (reportes muy espaciados o interrumpidos).
 - **Decisión operativa:** No se eliminan ni imputan estos países; se marcan en el DW, se muestra esta tabla en la pestaña de Calidad del tablero y se exige usar media móvil de 7 días para comparaciones temporales.
+
+## Linaje de datos (R2 · Nivel excelente)
+
+Cualquier cifra mostrada en el tablero o en las respuestas P1–P7 es completamente trazable hasta su archivo y fila de origen siguiendo la cadena de tres saltos:
+
+1. **Tablero / Consultas OLAP -> `fact_covid` (`data/dw_covid.duckdb`):** cada registro se identifica de forma única por `(fecha_key, territorio_key)`. La columna `esquema` indica la etapa original (`1` a `5`).
+2. **`fact_covid` -> `reportes_unificados.parquet` (`data/clean/`):** `fecha_key` (`YYYYMMDD`) mapea 1:1 a `fecha_reporte` (`YYYY-MM-DD`) y `territorio_key` mapea 1:1 a `dim_territorio.combined_key`.
+3. **`reportes_unificados.parquet` -> CSV crudo de origen (`data/raw/daily_reports/`):** el archivo exacto es `MM-DD-AAAA.csv` (derivado de `fecha_reporte`) y la fila corresponde a la tupla `(combined_key)` (o `(Province/State, Country/Region)` en esquemas 1 y 2).
+
+Ejemplo verificable en SQL sobre DuckDB para rastrear el registro de Biobío al `2021-12-28`:
+```sql
+SELECT f.fecha_key, t.combined_key, f.esquema, f.confirmed, f.deaths
+FROM fact_covid f
+JOIN dim_territorio t ON f.territorio_key = t.territorio_key
+WHERE t.country_region = 'Chile' AND t.province_state = 'Biobio' AND f.fecha_key = 20211228;
+-- Origen exacto: data/raw/daily_reports/12-28-2021.csv, fila Combined_Key = 'Biobio, Chile'.
+```
+

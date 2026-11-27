@@ -213,17 +213,21 @@ def ejecutar_analisis():
         )
         SELECT p.country_region, p.population,
                ROUND(v.vac_dic_2021, 1) AS vac_dic_2021,
-               ROUND(m.muertes_2022 * 100000.0 / p.population, 1) AS mortalidad_2022_100k
+               ROUND(m.muertes_2022 * 100000.0 / p.population, 1) AS mortalidad_2022_100k,
+               ROUND(w.pct_pob_65mas, 1) AS pct_pob_65mas
         FROM pob p
         JOIN vac_2021 v ON p.iso3 = v.iso3
         JOIN muertes_2022 m ON p.country_region = m.country_region
+        LEFT JOIN dim_indicadores_wb w ON p.iso3 = w.iso3
         WHERE v.vac_dic_2021 IS NOT NULL
     """).df()
 
     corr = p7["vac_dic_2021"].corr(p7["mortalidad_2022_100k"])
+    corr_edad = p7["pct_pob_65mas"].corr(p7["mortalidad_2022_100k"])
+    corr_vac_edad = p7["vac_dic_2021"].corr(p7["pct_pob_65mas"])
     print(f"\n--- P7 · VACUNACIÓN AL CIERRE 2021 VS MORTALIDAD 2022 (n={len(p7)} países >= 1M hab.) ---")
-    print(f"Correlación de Pearson r = {corr:.3f} (recordar: correlación no implica causalidad; "
-          "países más vacunados suelen tener mayor envejecimiento poblacional y mejor registro de defunciones)")
+    print(f"Correlación de Pearson vacunación vs mortalidad 2022: r = {corr:.3f}")
+    print(f"Factor de confusión (Banco Mundial): % pob >=65 años vs mortalidad 2022: r = {corr_edad:.3f} | vacunación vs >=65 años: r = {corr_vac_edad:.3f}")
 
     fig, ax = plt.subplots(figsize=(8, 4.8))
     ax.scatter(p7["vac_dic_2021"], p7["mortalidad_2022_100k"], alpha=0.65, color="#4A5F7A")

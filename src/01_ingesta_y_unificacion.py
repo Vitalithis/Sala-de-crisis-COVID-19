@@ -15,6 +15,8 @@ for d in [RAW_DAILY, RAW_TS, CLEAN_DIR]:
 
 JHU_BASE = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data"
 OWID_VAC_URL = "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.csv"
+WB_POP65_URL = "https://api.worldbank.org/v2/country/all/indicator/SP.POP.65UP.TO.ZS?date=2021&format=json&per_page=400"
+WB_GDP_URL = "https://api.worldbank.org/v2/country/all/indicator/NY.GDP.PCAP.CD?date=2021&format=json&per_page=400"
 
 RENOMBRAR = {
     "Province/State": "province_state",
@@ -68,8 +70,30 @@ def obtener_esquema(fecha: pd.Timestamp) -> int:
     return 5
 
 
+def descargar_banco_mundial(destino: str) -> bool:
+    if os.path.exists(destino) and os.path.getsize(destino) > 0:
+        return True
+    try:
+        r_pop = requests.get(WB_POP65_URL, timeout=15).json()[1]
+        r_gdp = requests.get(WB_GDP_URL, timeout=15).json()[1]
+        df_pop = pd.DataFrame([
+            {"iso3": x.get("countryiso3code"), "pais_wb": x.get("country", {}).get("value"), "pct_pob_65mas": x.get("value")}
+            for x in r_pop if x.get("countryiso3code")
+        ])
+        df_gdp = pd.DataFrame([
+            {"iso3": x.get("countryiso3code"), "pib_per_capita": x.get("value")}
+            for x in r_gdp if x.get("countryiso3code")
+        ])
+        wb = df_pop.merge(df_gdp, on="iso3", how="outer")
+        wb = wb[wb["iso3"].str.len() == 3].drop_duplicates("iso3")
+        wb.to_csv(destino, index=False)
+        return True
+    except Exception:
+        return False
+
+
 def paso_1_descargar():
-    print("1/3 · Descargando archivos maestros y fuente externa (OWID)...")
+    print("1/3 · Descargando archivos maestros y fuentes externas (OWID + Banco Mundial)...")
     maestros = [
         (f"{JHU_BASE}/UID_ISO_FIPS_LookUp_Table.csv", f"{RAW_ROOT}/UID_ISO_FIPS_LookUp_Table.csv"),
         (f"{JHU_BASE}/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv", f"{RAW_TS}/confirmed_global.csv"),
@@ -79,6 +103,8 @@ def paso_1_descargar():
     for url, dest in maestros:
         ok = descargar_archivo(url, dest)
         print(f"   [{'OK' if ok else 'ERROR'}] {os.path.basename(dest)}")
+    ok_wb = descargar_banco_mundial(f"{RAW_ROOT}/worldbank_indicadores.csv")
+    print(f"   [{'OK' if ok_wb else 'ERROR'}] worldbank_indicadores.csv")
 
     fechas = pd.date_range("2020-01-22", "2023-03-09", freq="D")
     tareas = [

@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from statsmodels.tsa.holtwinters import Holt
+from statsmodels.tsa.arima.model import ARIMA
 
 warnings.filterwarnings("ignore")
 
@@ -85,9 +86,10 @@ def obtener_serie_territorio(territorio: str, fecha_corte: str = None, dw_path: 
 def pronosticar(territorio: str, fecha_corte: str, horizonte: int = 14, dw_path: str = DW_PATH) -> pd.DataFrame:
     """
     Pronostica casos diarios (media móvil 7d) para los próximos `horizonte` días
-    usando SOLO datos <= fecha_corte. Compara 2 modelos:
+    usando SOLO datos <= fecha_corte. Compara 3 modelos:
       1) modelo_base: Media Móvil 7 días constante (persistencia)
       2) modelo_holt: Suavizamiento Exponencial de Holt con tendencia amortiguada
+      3) modelo_arima: ARIMA(1,1,1) autorregresivo integrado de media móvil
     """
     hist = obtener_serie_territorio(territorio, fecha_corte=fecha_corte, dw_path=dw_path)
     serie = hist["mm7_casos"].tail(90).values  # ventana reciente de 90 días
@@ -110,10 +112,18 @@ def pronosticar(territorio: str, fecha_corte: str, horizonte: int = 14, dw_path:
     except Exception:
         pred_holt = pred_base.copy()
 
+    # Modelo 3 (ARIMA(1,1,1)): dinámica autorregresiva sobre serie diferenciada
+    try:
+        ajuste_arima = ARIMA(serie, order=(1, 1, 1)).fit()
+        pred_arima = np.clip(ajuste_arima.forecast(steps=horizonte), 0, None)
+    except Exception:
+        pred_arima = pred_base.copy()
+
     return pd.DataFrame({
         "fecha": fechas_fut,
         "pred_base_mm7": np.round(pred_base, 1),
         "pred_holt": np.round(pred_holt, 1),
+        "pred_arima": np.round(pred_arima, 1),
     })
 
 
@@ -156,7 +166,11 @@ def ejecutar_backtesting_y_evaluacion():
     for corte, etiqueta in cortes:
         pred = pronosticar("Chile", corte, horizonte=14)
         comp = pred.merge(real_full[["fecha", "mm7_casos"]], on="fecha", how="inner")
-        for col_m, nombre_m in [("pred_base_mm7", "Base (MM7)"), ("pred_holt", "Holt amortiguado")]:
+        for col_m, nombre_m in [
+            ("pred_base_mm7", "Base (MM7)"),
+            ("pred_holt", "Holt amortiguado"),
+            ("pred_arima", "ARIMA(1,1,1)"),
+        ]:
             err = np.abs(comp["mm7_casos"] - comp[col_m])
             mae = float(err.mean())
             mape = float((err / comp["mm7_casos"].replace(0, np.nan)).dropna().mean() * 100)

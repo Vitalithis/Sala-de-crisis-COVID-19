@@ -44,7 +44,7 @@ def evaluar_calidad():
         SELECT COUNT(*) FROM fact_covid WHERE retrocede_casos
     """).fetchone()[0]
 
-    # Picos por acumulación de rezagos: casos_nuevos > 5 veces el promedio móvil local (y > 500 casos)
+    # Picos por rezagos (> 5x media móvil 14d y > 500 casos)
     picos_rezago = con.execute("""
         WITH stats AS (
             SELECT
@@ -59,7 +59,7 @@ def evaluar_calidad():
         WHERE casos_nuevos > 500 AND media_14d > 0 AND casos_nuevos > 5 * media_14d
     """).fetchone()[0]
 
-    # 6. OPORTUNIDAD: días sin reporte efectivo (casos_nuevos = 0 en 2022-2023 para países con >100k casos)
+    # 6. OPORTUNIDAD: días sin reporte (2022-2023, países >100k casos)
     dias_sin_reporte = con.execute("""
         WITH pais_dia AS (
             SELECT

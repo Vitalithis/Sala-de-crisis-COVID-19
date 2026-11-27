@@ -1,3 +1,4 @@
+import os
 import duckdb
 import pandas as pd
 
@@ -5,6 +6,7 @@ DW_PATH = "data/dw_covid.duckdb"
 PARQUET_PATH = "data/clean/reportes_unificados.parquet"
 UID_PATH = "data/raw/UID_ISO_FIPS_LookUp_Table.csv"
 OWID_PATH = "data/raw/owid_vaccinations.csv"
+WB_PATH = "data/raw/worldbank_indicadores.csv"
 
 
 def construir_dw():
@@ -130,7 +132,7 @@ def construir_dw():
         FROM con_deltas
     """)
 
-    print("4/5 · Integrando fuente externa OWID (vacunación) por código ISO3...")
+    print("4/5 · Integrando fuentes externas (OWID vacunación + Banco Mundial) por código ISO3...")
     con.execute(f"""
         CREATE OR REPLACE TABLE fact_vacunacion AS
         SELECT
@@ -147,12 +149,30 @@ def construir_dw():
           AND iso_code NOT LIKE 'OWID_%'
     """)
 
+    if os.path.exists(WB_PATH):
+        con.execute(f"""
+            CREATE OR REPLACE TABLE dim_indicadores_wb AS
+            SELECT
+                TRIM(iso3) AS iso3,
+                pais_wb,
+                TRY_CAST(pct_pob_65mas AS DOUBLE) AS pct_pob_65mas,
+                TRY_CAST(pib_per_capita AS DOUBLE) AS pib_per_capita
+            FROM read_csv_auto('{WB_PATH}', all_varchar=TRUE)
+            WHERE iso3 IS NOT NULL
+        """)
+    else:
+        con.execute("""
+            CREATE OR REPLACE TABLE dim_indicadores_wb (
+                iso3 VARCHAR, pais_wb VARCHAR, pct_pob_65mas DOUBLE, pib_per_capita DOUBLE
+            )
+        """)
+
     print("5/5 · Conciliación de carga y tasa de cruce ISO3...")
     raw_rows = con.execute(f"SELECT COUNT(*) FROM read_parquet('{PARQUET_PATH}')").fetchone()[0]
     fact_rows = con.execute("SELECT COUNT(*) FROM fact_covid").fetchone()[0]
     retro_casos = con.execute("SELECT COUNT(*) FROM fact_covid WHERE retrocede_casos").fetchone()[0]
 
-    # Tasa de cruce a nivel de países distintos en dim_territorio vs OWID
+    # Tasa de cruce a nivel de países distintos en dim_territorio vs OWID y Banco Mundial
     paises_dw = con.execute("""
         SELECT COUNT(DISTINCT country_region) FROM dim_territorio
     """).fetchone()[0]
@@ -160,6 +180,12 @@ def construir_dw():
         SELECT COUNT(DISTINCT t.country_region)
         FROM dim_territorio t
         INNER JOIN fact_vacunacion v ON t.iso3 = v.iso3
+    """).fetchone()[0]
+    paises_cruzan_wb = con.execute("""
+        SELECT COUNT(DISTINCT t.country_region)
+        FROM dim_territorio t
+        INNER JOIN dim_indicadores_wb w ON t.iso3 = w.iso3
+        WHERE w.pct_pob_65mas IS NOT NULL
     """).fetchone()[0]
     sin_cruce = con.execute("""
         SELECT DISTINCT t.country_region, t.iso3
@@ -175,7 +201,8 @@ def construir_dw():
     print(f"Días con acumulado que baja : {retro_casos:,}")
     print(f"Países/entidades en DW      : {paises_dw}")
     print(f"Cruzan con OWID por ISO3    : {paises_cruzan} ({paises_cruzan/paises_dw*100:.1f} %)")
-    print(f"Sin cruce ({len(sin_cruce)}): {sin_cruce['country_region'].tolist()}")
+    print(f"Cruzan con Banco Mundial    : {paises_cruzan_wb} ({paises_cruzan_wb/paises_dw*100:.1f} %)")
+    print(f"Sin cruce OWID ({len(sin_cruce)}): {sin_cruce['country_region'].tolist()}")
 
     con.execute("DROP TABLE IF EXISTS stg_uid")
     con.close()

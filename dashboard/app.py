@@ -93,6 +93,50 @@ def cargar_mapa_mundial(fecha_corte: str):
 
 
 @st.cache_data(show_spinner=False)
+def cargar_mapa_mundial_animado():
+    con = duckdb.connect(DW_PATH, read_only=True)
+    df = con.execute("""
+        WITH pob AS (
+            SELECT country_region,
+                   COALESCE(
+                       MAX(CASE WHEN nivel_granularidad = 'pais' THEN population END),
+                       SUM(CASE WHEN nivel_granularidad = 'region_estado' THEN population END),
+                       SUM(population)
+                   ) AS population,
+                   AVG(lat) AS lat,
+                   AVG(long) AS long
+            FROM dim_territorio
+            WHERE NOT es_entidad_especial
+            GROUP BY 1
+        ),
+        fin_mes AS (
+            SELECT anio_mes, MAX(fecha_key) AS fecha_key
+            FROM dim_fecha
+            GROUP BY 1
+        ),
+        mensual AS (
+            SELECT fm.anio_mes, t.country_region,
+                   SUM(f.confirmed) AS confirmed,
+                   SUM(f.deaths) AS deaths
+            FROM fact_covid f
+            JOIN fin_mes fm ON f.fecha_key = fm.fecha_key
+            JOIN dim_territorio t ON f.territorio_key = t.territorio_key
+            WHERE NOT t.es_entidad_especial
+            GROUP BY 1, 2
+        )
+        SELECT m.anio_mes, m.country_region, m.confirmed, m.deaths, p.lat, p.long,
+               ROUND(m.confirmed * 100000.0 / NULLIF(p.population, 0), 1) AS incidencia_100k,
+               ROUND(m.deaths * 100000.0 / NULLIF(p.population, 0), 1) AS mortalidad_100k
+        FROM mensual m
+        JOIN pob p ON m.country_region = p.country_region
+        WHERE p.population > 0 AND p.lat IS NOT NULL AND p.long IS NOT NULL
+        ORDER BY m.anio_mes, m.country_region
+    """).df()
+    con.close()
+    return df
+
+
+@st.cache_data(show_spinner=False)
 def cargar_mapa_chile(fecha_corte: str):
     con = duckdb.connect(DW_PATH, read_only=True)
     df = con.execute(f"""
@@ -138,7 +182,7 @@ def aplicar_supresion(valor: float, poblacion: float) -> str:
     if pd.isna(valor):
         return "Sin dato"
     if pd.notna(poblacion) and poblacion < 50_000 and 1 <= valor <= 4:
-        return "<5 (suprimido R6)"
+        return "<5"
     return f"{int(round(valor)):,}".replace(",", ".")
 
 
@@ -165,7 +209,7 @@ fecha_corte_dt = st.sidebar.date_input(
 fecha_corte = fecha_corte_dt.strftime("%Y-%m-%d")
 
 st.sidebar.divider()
-st.sidebar.markdown("**Umbrales de Alerta Temprana (R5)**")
+st.sidebar.markdown("**Umbrales de Alerta Temprana**")
 umbral_inc = st.sidebar.slider("Incidencia 7d mínima (c/100k)", 10.0, 100.0, 35.0, 5.0)
 umbral_var = st.sidebar.slider("Variación semanal mínima (%)", 10.0, 60.0, 25.0, 5.0)
 
@@ -177,7 +221,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Panorama y Tendencias",
     "Mapas Mundial y Chile",
     "Desafío en Vivo (Pronóstico y Alerta)",
-    "Calidad (R2) y Segmentación (P5)",
+    "Calidad y Segmentación",
 ])
 
 # =====================================================================
@@ -248,6 +292,15 @@ with tab1:
 # TAB 2: MAPAS MUNDIAL Y CHILE + RANKING
 # =====================================================================
 with tab2:
+    etiquetas_mapa = {
+        "country_region": "País",
+        "region": "Región",
+        "confirmed": "Confirmados",
+        "deaths": "Fallecidos",
+        "incidencia_100k": "Incidencia (c/100k)",
+        "mortalidad_100k": "Mortalidad (c/100k)",
+        "anio_mes": "Año-Mes",
+    }
     col_m1, col_m2 = st.columns([1.4, 1])
 
     with col_m1:
@@ -257,7 +310,8 @@ with tab2:
             fig_mundo = px.scatter_geo(
                 df_mundo, lat="lat", lon="long", size="incidencia_100k", color="mortalidad_100k",
                 hover_name="country_region",
-                hover_data={"confirmed": True, "deaths": True, "incidencia_100k": True, "lat": False, "long": False},
+                hover_data={"confirmed": ":,", "deaths": ":,", "incidencia_100k": ":.1f", "mortalidad_100k": ":.1f", "lat": False, "long": False},
+                labels=etiquetas_mapa,
                 color_continuous_scale="Reds", size_max=35,
                 title="Incidencia acumulada (tamaño) y mortalidad por 100k (color)",
             )
@@ -269,7 +323,7 @@ with tab2:
             st.dataframe(
                 df_mundo.sort_values("incidencia_100k", ascending=False)[
                     ["country_region", "confirmed", "deaths", "incidencia_100k", "mortalidad_100k"]
-                ].head(10),
+                ].head(10).rename(columns=etiquetas_mapa),
                 use_container_width=True, hide_index=True,
             )
 
@@ -282,7 +336,8 @@ with tab2:
             fig_cl = px.scatter_map(
                 df_cl, lat="lat", lon="long", size="incidencia_100k", color="incidencia_100k",
                 hover_name="region",
-                hover_data={"confirmed": True, "deaths": True, "incidencia_100k": True, "lat": False, "long": False},
+                hover_data={"confirmed": ":,", "deaths": ":,", "incidencia_100k": ":.1f", "mortalidad_100k": ":.1f", "lat": False, "long": False},
+                labels=etiquetas_mapa,
                 color_continuous_scale="OrRd", size_max=28, zoom=3.2,
                 center={"lat": -36.8, "lon": -72.0}, map_style="carto-positron",
             )
@@ -292,15 +347,38 @@ with tab2:
 
             st.markdown("**Ranking regional de Chile (destacando Biobío)**")
             st.dataframe(
-                df_cl[["region", "confirmed", "deaths", "incidencia_100k", "mortalidad_100k"]],
+                df_cl[["region", "confirmed", "deaths", "incidencia_100k", "mortalidad_100k"]].rename(columns=etiquetas_mapa),
                 use_container_width=True, hide_index=True,
             )
+
+    st.divider()
+    with st.expander("Evolución temporal animada en el mundo (mes a mes)", expanded=False):
+        df_anim = cargar_mapa_mundial_animado()
+        if not df_anim.empty:
+            fig_anim = px.scatter_geo(
+                df_anim,
+                lat="lat",
+                lon="long",
+                size="incidencia_100k",
+                color="mortalidad_100k",
+                hover_name="country_region",
+                hover_data={"confirmed": ":,", "deaths": ":,", "incidencia_100k": ":.1f", "mortalidad_100k": ":.1f", "lat": False, "long": False},
+                labels=etiquetas_mapa,
+                animation_frame="anio_mes",
+                color_continuous_scale="Reds",
+                range_color=[0, max(float(df_anim["mortalidad_100k"].quantile(0.95)), 100.0)],
+                size_max=32,
+                title="Avance mensual de incidencia (tamaño) y mortalidad por 100.000 hab. (color)",
+            )
+            fig_anim.update_layout(height=470, margin=dict(l=0, r=0, t=40, b=0))
+            st.plotly_chart(fig_anim, use_container_width=True)
+            st.caption("Presiona Play en la barra inferior del mapa para observar la expansión mes a mes de 2020-01 a 2023-03.")
 
 # =====================================================================
 # TAB 3: DESAFÍO EN VIVO (PRONÓSTICO SIN FUGA + COMPARACIÓN REAL)
 # =====================================================================
 with tab3:
-    st.subheader(f"Desafío en Vivo · {territorio} al {fecha_corte} (horizonte = 14 días)")
+    st.subheader(f"Desafío en Vivo · {territorio} al {fecha_corte}")
     horizonte = st.number_input("Horizonte de pronóstico (días)", min_value=7, max_value=30, value=14)
     revelar_real = st.toggle("Comparar con lo que realmente ocurrió después de la fecha de corte", value=False)
     try:
@@ -308,24 +386,29 @@ with tab3:
         pred = modelos.pronosticar(territorio, fecha_corte=fecha_corte, horizonte=int(horizonte))
         al = modelos.alerta(territorio, fecha_corte, umbral_var_pct=umbral_var, umbral_inc=umbral_inc)
 
-        k1, k2, k3 = st.columns(3)
+        k1, k2, k3, k4 = st.columns(4)
         k1.metric(
             "Estado de alerta al corte",
             "ACTIVA" if al["activa"] else "Inactiva",
             help="Activa cuando la incidencia a 7 días y la variación semanal superan los umbrales de la barra lateral.",
         )
         k2.metric(
-            f"Pronóstico día +{int(horizonte)} (Base MM7)",
+            f"Día +{int(horizonte)} (Base MM7)",
             f"{pred['pred_base_mm7'].iloc[-1]:,.1f}",
             help="Línea base constante igual a la última media móvil de 7 días observada en la fecha de corte.",
         )
         k3.metric(
-            f"Pronóstico día +{int(horizonte)} (Holt)",
+            f"Día +{int(horizonte)} (Holt)",
             f"{pred['pred_holt'].iloc[-1]:,.1f}",
             help="Proyección mediante suavizamiento exponencial de Holt con tendencia amortiguada entrenada solo hasta la fecha de corte.",
         )
+        k4.metric(
+            f"Día +{int(horizonte)} (ARIMA)",
+            f"{pred['pred_arima'].iloc[-1]:,.1f}",
+            help="Modelo autorregresivo integrado de media móvil ARIMA(1,1,1) ajustado solo hasta la fecha de corte.",
+        )
         st.caption(
-            "Ambos pronósticos estiman casos diarios suavizados (MM7) usando exclusivamente datos hasta la fecha de corte, "
+            "Los tres modelos pronostican casos diarios suavizados (MM7) usando exclusivamente datos hasta la fecha de corte, "
             "sin fuga de información futura."
         )
 
@@ -334,6 +417,7 @@ with tab3:
         fig_p.add_trace(go.Scatter(x=ventana_hist["fecha"], y=ventana_hist["mm7_casos"], name="Histórico MM7 (<= corte)", line=dict(color="#60A5FA", width=2.5)))
         fig_p.add_trace(go.Scatter(x=pred["fecha"], y=pred["pred_base_mm7"], name="Modelo Base (MM7)", line=dict(color="#94A3B8", dash="dash")))
         fig_p.add_trace(go.Scatter(x=pred["fecha"], y=pred["pred_holt"], name="Modelo Holt Amortiguado", line=dict(color="#EF4444", width=2.5, dash="dot")))
+        fig_p.add_trace(go.Scatter(x=pred["fecha"], y=pred["pred_arima"], name="Modelo ARIMA(1,1,1)", line=dict(color="#F59E0B", width=2.2, dash="dashdot")))
 
         comp = None
         if revelar_real:
@@ -343,9 +427,16 @@ with tab3:
                 fig_p.add_trace(go.Scatter(x=comp["fecha"], y=comp["mm7_casos"], name="Real ocurrido (> corte)", line=dict(color="#10B981", width=3)))
                 mae_b = np.abs(comp["mm7_casos"] - comp["pred_base_mm7"]).mean()
                 mae_h = np.abs(comp["mm7_casos"] - comp["pred_holt"]).mean()
+                mae_a = np.abs(comp["mm7_casos"] - comp["pred_arima"]).mean()
                 mape_b = (np.abs(comp["mm7_casos"] - comp["pred_base_mm7"]) / comp["mm7_casos"].replace(0, np.nan)).dropna().mean() * 100
                 mape_h = (np.abs(comp["mm7_casos"] - comp["pred_holt"]) / comp["mm7_casos"].replace(0, np.nan)).dropna().mean() * 100
-                st.info(f"**Evaluación contra realidad ({len(comp)} días):** Base MM7 -> MAE={mae_b:.1f}, MAPE={mape_b:.1f}% | **Holt -> MAE={mae_h:.1f}, MAPE={mape_h:.1f}%**")
+                mape_a = (np.abs(comp["mm7_casos"] - comp["pred_arima"]) / comp["mm7_casos"].replace(0, np.nan)).dropna().mean() * 100
+                st.info(
+                    f"**Evaluación contra realidad ({len(comp)} días):** "
+                    f"Base MM7 -> MAE={mae_b:.1f}, MAPE={mape_b:.1f}% | "
+                    f"**Holt -> MAE={mae_h:.1f}, MAPE={mape_h:.1f}%** | "
+                    f"ARIMA -> MAE={mae_a:.1f}, MAPE={mape_a:.1f}%"
+                )
             else:
                 st.warning(
                     f"No existen datos reales posteriores al **{fecha_corte}** (el registro histórico de Johns Hopkins "
@@ -372,6 +463,8 @@ with tab3:
                 "Dif. Base": (comp["pred_base_mm7"] - comp["mm7_casos"]).round(1),
                 "Holt": comp["pred_holt"].round(1),
                 "Dif. Holt": (comp["pred_holt"] - comp["mm7_casos"]).round(1),
+                "ARIMA": comp["pred_arima"].round(1),
+                "Dif. ARIMA": (comp["pred_arima"] - comp["mm7_casos"]).round(1),
                 "Error % Holt": (
                     (comp["pred_holt"] - comp["mm7_casos"]).abs()
                     / comp["mm7_casos"].replace(0, np.nan)
@@ -383,16 +476,16 @@ with tab3:
         st.error(f"No se pudo ejecutar el pronóstico para {territorio} en {fecha_corte}: {e}")
 
 # =====================================================================
-# TAB 4: CALIDAD (R2) Y SEGMENTACIÓN (P5) · DISEÑO VERTICAL 1x4
+# TAB 4: CALIDAD Y SEGMENTACIÓN · DISEÑO VERTICAL 1x4
 # =====================================================================
 with tab4:
-    st.subheader("1. Control de calidad · 6 dimensiones (R2)")
+    st.subheader("1. Control de calidad · 6 dimensiones")
     if os.path.exists("data/clean/reglas_calidad.csv"):
         st.dataframe(pd.read_csv("data/clean/reglas_calidad.csv"), use_container_width=True, hide_index=True)
         st.caption("Evaluación automática sobre las 4.287.467 filas de fact_covid en DuckDB.")
 
     st.divider()
-    st.subheader("2. Top 10 países con peor índice de calidad (P4)")
+    st.subheader("2. Top 10 países con peor índice de calidad")
     if os.path.exists("data/clean/indice_calidad_paises.csv"):
         st.dataframe(pd.read_csv("data/clean/indice_calidad_paises.csv").head(10), use_container_width=True, hide_index=True)
         st.caption(
@@ -400,15 +493,20 @@ with tab4:
         )
 
     st.divider()
-    st.subheader("3. Segmentación de países · K-Means (P5)")
+    st.subheader("3. Segmentación de países · K-Means")
     if os.path.exists("data/clean/segmentacion_paises.csv"):
         seg = pd.read_csv("data/clean/segmentacion_paises.csv").copy()
-        nombres_cluster = {
-            0: "0 · Baja incidencia y baja vacunación",
-            1: "1 · Alta carga epidémica y alta vacunación",
-            2: "2 · Atípico (letalidad extrema, vac. mínima)",
-            3: "3 · Carga moderada y alta vacunación",
-        }
+        cent = seg.groupby("cluster")[["casos_100k", "letalidad_pct", "max_vac_pct"]].mean()
+        nombres_cluster = {}
+        for cid, row in cent.iterrows():
+            if row["letalidad_pct"] > 10:
+                nombres_cluster[cid] = f"{cid} · Atípico (letalidad extrema, vac. mínima)"
+            elif row["casos_100k"] > 20_000:
+                nombres_cluster[cid] = f"{cid} · Alta carga epidémica y alta vacunación"
+            elif row["max_vac_pct"] < 40:
+                nombres_cluster[cid] = f"{cid} · Baja incidencia y baja vacunación"
+            else:
+                nombres_cluster[cid] = f"{cid} · Carga moderada y alta vacunación"
         seg["perfil"] = seg["cluster"].map(nombres_cluster).fillna(seg["cluster"].astype(str))
         seg["tam_log"] = np.log10(seg["population"].clip(lower=10_000))
         fig_seg = px.scatter(
@@ -448,14 +546,14 @@ with tab4:
         st.dataframe(resumen_seg, use_container_width=True, hide_index=True)
 
     st.divider()
-    st.subheader("4. Backtesting en 3 fechas de corte · Chile (R5)")
+    st.subheader("4. Backtesting en 3 fechas de corte · Chile")
     if os.path.exists("data/clean/backtesting_chile.csv"):
         st.dataframe(pd.read_csv("data/clean/backtesting_chile.csv"), use_container_width=True, hide_index=True)
         st.caption("Comparación del error a 14 días (MAE y MAPE) entre modelo Base MM7 y Holt amortiguado en tres momentos de la pandemia.")
 
-    with st.expander("Notas metodológicas y control de divulgación (R2 / R6)", expanded=False):
+    with st.expander("Notas metodológicas y control de divulgación", expanded=False):
         st.markdown(
             "- La letalidad aparente depende del nivel de testeo de cada país.\n"
             "- Chile cambia de granularidad (nacional a 16 regiones) a fines de mayo de 2020.\n"
-            "- Conteos entre 1 y 4 en territorios con menos de 50.000 habitantes se suprimen como `<5 (suprimido R6)`."
+            "- Conteos entre 1 y 4 en territorios con menos de 50.000 habitantes se suprimen como `<5`."
         )
